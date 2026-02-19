@@ -3,35 +3,34 @@ package main
 import (
 	"log"
 
+	"github.com/Khirill3490/weatherBot/internal/bot"
 	"github.com/Khirill3490/weatherBot/internal/config"
+	"github.com/Khirill3490/weatherBot/internal/handlers"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+/*
+main.go теперь делает только:
+1) загрузка конфига
+2) инициализация Telegram API клиента
+3) регистрация команд
+4) запуск обработчика
+*/
 func main() {
 	cfg := config.NewConfig()
 
-	bot, err := tgbotapi.NewBotAPI(cfg.BotToken)
+	tgBot, err := tgbotapi.NewBotAPI(cfg.BotToken)
 	if err != nil {
 		log.Fatalf("failed to init bot: %v", err)
 	}
 
-	bot.Debug = true
+	tgBot.Debug = false
+	log.Printf("Authorized on account %s", tgBot.Self.UserName)
 
-	log.Printf("Authorized on account %s", bot.Self.UserName)
+	// Системное меню Telegram: /start /help
+	bot.RegisterCommands(tgBot)
 
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-
-	updates := bot.GetUpdatesChan(u)
-
-	for update := range updates {
-		if update.Message != nil { // If we got a message
-			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-			msg.ReplyToMessageID = update.Message.MessageID
-
-			bot.Send(msg)
-		}
-	}
+	// Запускаем обработчик событий
+	h := handlers.New(tgBot, cfg)
+	h.Run()
 }
