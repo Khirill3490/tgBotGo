@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  tg-bot:
+    build: .
+    container_name: tg-bot
+
+    # Подгружаем переменные окружения (TOKEN_BOT)
+    env_file:
+      - .env
+
+    # Чтобы бот автоматически перезапускался если упал
+    restart: unless-stopped
+
+    # Логи удобно смотреть через docker compose logs
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"

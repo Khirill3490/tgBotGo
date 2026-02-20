@@ -2,75 +2,108 @@ package handlers
 
 import (
 	"log"
+	"math/rand"
 	"strings"
+	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-func (h *Handler) handleMessage(m *tgbotapi.Message) {
-	text := strings.ToLower(strings.TrimSpace(m.Text))
-	chatID := m.Chat.ID
+// если у тебя уже где-то есть seed — можно убрать init()
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
-	log.Printf("[%s] %s", m.From.UserName, text)
+func (h *Handler) handleMessage(msg *tgbotapi.Message) {
+	chatID := msg.Chat.ID
 
-	// Если это команда — обрабатываем отдельно
-	if strings.HasPrefix(text, "/") {
-		h.handleCommand(chatID, text)
+	// 1) Команды вида /start, /help
+	if msg.IsCommand() {
+		h.handleCommand(chatID, msg.Command())
 		return
 	}
 
-	// Если не команда — обычный текст
-	reply := h.buildReply(text)
+	// 2) Обычный текст
+	text := strings.TrimSpace(strings.ToLower(msg.Text))
+	if text == "" {
+		return
+	}
 
-	msg := tgbotapi.NewMessage(chatID, reply)
-	msg.ReplyMarkup = h.mainInlineMenu()
-	_, _ = h.tgBot.Send(msg)
-}
+	replyText, replyMarkup := h.buildTextReply(text)
 
-/*
-buildReply — простейшая бизнес-логика.
-Пока это switch, позже можно заменить на полноценные handlers/routers.
-*/
-func (h *Handler) buildReply(text string) string {
-	switch text {
-	case "привет", "hello", "hi":
-		return h.cfg.Texts.Replies.Hello
+	out := tgbotapi.NewMessage(chatID, replyText)
+	if replyMarkup != nil {
+		out.ReplyMarkup = replyMarkup
+	}
 
-	case "как дела?":
-		return h.cfg.Texts.Replies.HowAreYou
-
-	default:
-		return h.cfg.Texts.Replies.Unknown
+	if _, err := h.tgBot.Send(out); err != nil {
+		log.Printf("send message error: %v", err)
 	}
 }
 
-
+// msg.Command() возвращает команду БЕЗ слэша: "start", "help", ...
 func (h *Handler) handleCommand(chatID int64, cmd string) {
-
 	var text string
+	var markup tgbotapi.InlineKeyboardMarkup
+	var ok bool
 
-	switch cmd {
+	switch strings.ToLower(cmd) {
+	case "start", "старт":
+		text, markup = h.renderMenu("main")
 
-	case "/start", "/старт":
-		text = h.cfg.Texts.StartText
+	case "sex", "секс":
+		text, markup = h.renderMenu("sex")
 
-	case "/help", "/помощь":
-		text = h.cfg.Texts.Screens.Help
+	case "info", "инфо":
+		text, markup = h.renderScreen("info")
 
-	case "/info", "/инфо":
-		text = h.cfg.Texts.Screens.Info
+	case "help", "помощь":
+		text, markup = h.renderScreen("help")
 
-	case "/sex", "/секс":
-		text = h.cfg.Texts.Screens.Sex
+	case "weather", "погода":
+		text, markup = h.renderScreen("weather")
 
-	case "/hulk", "/халк":
-		text = h.cfg.Texts.Screens.Hulk
+	case "hulk", "халк":
+		text, markup = h.renderScreen("hulk")
 
 	default:
 		text = h.cfg.Texts.Replies.Unknown
+		markup, ok = h.buildMenu("main")
+		if !ok {
+			markup = tgbotapi.NewInlineKeyboardMarkup()
+		}
 	}
 
-	msg := tgbotapi.NewMessage(chatID, text)
-	msg.ReplyMarkup = h.mainInlineMenu()
-	_, _ = h.tgBot.Send(msg)
+	out := tgbotapi.NewMessage(chatID, text)
+	out.ReplyMarkup = markup
+
+	if _, err := h.tgBot.Send(out); err != nil {
+		log.Printf("send command message error: %v", err)
+	}
+}
+
+// buildTextReply — ответы на обычные сообщения без команд
+// Возвращает (text, markup). markup может быть nil — значит без клавиатуры.
+func (h *Handler) buildTextReply(normalized string) (string, *tgbotapi.InlineKeyboardMarkup) {
+	switch normalized {
+	case "привет", "hi", "hello":
+		return h.cfg.Texts.Replies.Hello, nil
+
+	case "как дела", "как дела?", "как ты", "как ты?":
+		answers := h.cfg.Texts.Replies.HowAreYou
+		if len(answers) == 0 {
+			return "Нормально 🙂", nil
+		}
+		return answers[rand.Intn(len(answers))], nil
+
+	// Можешь добавить другие "триггеры" по желанию
+
+	default:
+		// Можно в unknown добавлять кнопку "открыть меню"
+		m, ok := h.buildMenu("main")
+		if ok {
+			return h.cfg.Texts.Replies.Unknown, &m
+		}
+		return h.cfg.Texts.Replies.Unknown, nil
+	}
 }

@@ -1,32 +1,32 @@
 package handlers
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+)
 
-/*
-mainInlineMenu — главное меню кнопок под сообщением.
-Тексты кнопок берём из YAML, а callback-данные — из констант cb*.
-*/
-func (h *Handler) mainInlineMenu() tgbotapi.InlineKeyboardMarkup {
-	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(h.cfg.Texts.Buttons.Weather, cbWeather),
-			tgbotapi.NewInlineKeyboardButtonData(h.cfg.Texts.Buttons.Help, cbHelp),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(h.cfg.Texts.Buttons.Info, cbInfo),
-			tgbotapi.NewInlineKeyboardButtonData(h.cfg.Texts.Buttons.Sex, cbSex),
-			tgbotapi.NewInlineKeyboardButtonData(h.cfg.Texts.Buttons.Hulk, cbHulk),
-		),
-	)
-}
+// buildMenu строит inline-клавиатуру по имени меню из YAML
+func (h *Handler) buildMenu(name string) (tgbotapi.InlineKeyboardMarkup, bool) {
+	menu, ok := h.cfg.Texts.Menus[name]
+	if !ok {
+		return tgbotapi.InlineKeyboardMarkup{}, false
+	}
 
-/*
-backInlineMenu — кнопка "Назад" для внутренних экранов.
-*/
-func (h *Handler) backInlineMenu() tgbotapi.InlineKeyboardMarkup {
-	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(h.cfg.Texts.Buttons.Back, cbBack),
-		),
-	)
+	var rows [][]tgbotapi.InlineKeyboardButton
+
+	for _, yamlRow := range menu.Rows {
+
+		var row []tgbotapi.InlineKeyboardButton
+
+		for _, btn := range yamlRow {
+			row = append(row,
+				tgbotapi.NewInlineKeyboardButtonData(btn.Text, btn.CB),
+			)
+		}
+
+		rows = append(rows, row)
+	}
+
+	return tgbotapi.InlineKeyboardMarkup{
+		InlineKeyboard: rows,
+	}, true
 }

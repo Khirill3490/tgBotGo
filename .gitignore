@@ -1,5 +1,22 @@
+# env
 .env
+
+# build
 bin/
+dist/
+*.exe
+*.out
+
+# go
+*.test
+vendor/
+
+# IDE
 .idea/
 .vscode/
+
+# OS
+.DS_Store
+
+# logs
 *.log
