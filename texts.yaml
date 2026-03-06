@@ -53,6 +53,17 @@ screens:
     Чат открыт.
     Пока там только ты… и я 🤖
 
+  test_intro: |
+    Ты сомневаешься? Ну давай посмотрим... 🧠
+    Готов(а) узнать свой icq?
+
+  id_yes: |
+    Супер. Приступаем
+
+  iq_afraid: |
+    Супер. Приступаем
+
+
   hulk: "Вот он, Халк! 💪"
 
 # -------------------------
@@ -75,6 +86,7 @@ menus:
     rows:
       - [ {text: "ℹ️ О боте", cb: "screen:info"}, {text: "🌦 Погода", cb: "screen:weather"} ]
       - [ {text: "🔞 Раздел", cb: "menu:sex"}, {text: "💪 Халк", cb: "screen:hulk"} ]
+      - [ {text: "🧠 Тест на тупость", cb: "menu:test_intro"} ]
 
   sex:
     text: "sex_root"
@@ -83,3 +95,41 @@ menus:
       - [ {text: "Садомазо", cb: "screen:sex_sado"}, {text: "Унижения", cb: "screen:sex_humor"} ]
       - [ {text: "Секс чат", cb: "screen:sex_chat"} ]
       - [ {text: "⬅️ Назад", cb: "menu:main"} ]
+
+  test_intro:
+    text: "test_intro"
+  rows:
+    - [ {text: "Да", cb: "menu:test_q1"}, {text: "Нет, но да", cb: "menu:test_q1"} ]
+    - [ {text: "Я боюсь", cb: "screen:test_result_afraid"}, {text: "Я тупой", cb: "screen:test_result_stupid"} ]
+
+
+  iq_yes:
+    text: "iq_yes"
+    rows:
+      - [ {text: "3", cb: "screen:wrong"} ]
+      - [ {text: "4", cb: "menu:iq_q2"} ]
+
+
+
+# Вопрос 7
+
+# Пастух имеет 17 овец.
+# Все, кроме 9, умерли.
+# Сколько овец осталось?
+
+# A) 8
+# B) 9
+# C) 17
+# D) Ни одной
+
+# Правильный ответ: B) 9
+
+# Сколько животных каждого вида взял Моисей в ковчег?
+
+# A) По одному
+# B) По два
+# C) По семь
+# D) Нисколько
+
+# Правильный ответ: D) Нисколько
+
