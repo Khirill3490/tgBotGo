@@ -1,109 +1,142 @@
 package handlers
 
 import (
-	"log"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-const (
-	cbMenuPrefix   = "menu:"
-	cbScreenPrefix = "screen:"
-)
+func getScreen(data string) (string, tgbotapi.InlineKeyboardMarkup) {
+	screenPrefix := "screen:"
+	menuPrefix := "menu:"
+	testPrefix := "test:"
+	var text string
+	var keyboard tgbotapi.InlineKeyboardMarkup
 
-func (h *Handler) handleCallback(cq *tgbotapi.CallbackQuery) {
-	// 1) Telegram ждёт подтверждение нажатия (иначе будет "крутилка")
-	ack := tgbotapi.NewCallback(cq.ID, "")
-	if _, err := h.tgBot.Request(ack); err != nil {
-		log.Printf("callback ack error: %v", err)
-	}
+	var command string
 
-	chatID := cq.Message.Chat.ID
-	messageID := cq.Message.MessageID
+	if strings.HasPrefix(data, screenPrefix) {
+		command = strings.TrimPrefix(data, screenPrefix)
 
-	// 2) Разбираем действие из callback_data
-	text, markup := h.resolveCallbackAction(cq.Data)
-
-	// 3) Редактируем текущее сообщение (как у тебя и было)
-	edit := tgbotapi.NewEditMessageText(chatID, messageID, text)
-	edit.ReplyMarkup = &markup
-
-	if _, err := h.tgBot.Send(edit); err != nil {
-		// Если редактирование недоступно — отправим новое сообщение
-		log.Printf("edit message error: %v", err)
-		msg := tgbotapi.NewMessage(chatID, text)
-		msg.ReplyMarkup = markup
-		_, _ = h.tgBot.Send(msg)
-	}
-}
-
-// resolveCallbackAction понимает только 2 вида callback:
-// - menu:<name>   -> открыть меню из YAML
-// - screen:<key>  -> показать экран из YAML
-func (h *Handler) resolveCallbackAction(data string) (string, tgbotapi.InlineKeyboardMarkup) {
-	switch {
-	case strings.HasPrefix(data, cbMenuPrefix):
-		menuName := strings.TrimPrefix(data, cbMenuPrefix)
-		return h.renderMenu(menuName)
-
-	case strings.HasPrefix(data, cbScreenPrefix):
-		screenKey := strings.TrimPrefix(data, cbScreenPrefix)
-		return h.renderScreen(screenKey)
-
-	default:
-		// неизвестный callback
-		text := h.cfg.Texts.Replies.Unknown
-		markup, ok := h.buildMenu("main")
-		if !ok {
-			return text, tgbotapi.NewInlineKeyboardMarkup()
+		switch command {
+		case "weather":
+			text, keyboard = getWeatherMenu()
+		case "info":
+			text, keyboard = getInfoMenu()
+		default:
+			text = "Вы нажали неизвестную кнопку"
+			keyboard = getBackButton()
 		}
-		return text, markup
-	}
-}
 
-// renderMenu показывает текст меню + клавиатуру меню.
-// menu.Text — это ключ в screens.
-func (h *Handler) renderMenu(menuName string) (string, tgbotapi.InlineKeyboardMarkup) {
-	menu, ok := h.cfg.Texts.Menus[menuName]
-	if !ok {
-		// нет такого меню в YAML -> неизвестное
-		text := h.cfg.Texts.Replies.Unknown
-		markup, ok2 := h.buildMenu("main")
-		if !ok2 {
-			return text, tgbotapi.NewInlineKeyboardMarkup()
+	} else if strings.HasPrefix(data, menuPrefix) {
+		command = strings.TrimPrefix(data, menuPrefix)
+
+		switch command {
+		case "main":
+			text, keyboard = getMainMenu()
+		case "test_intro":
+			text, keyboard = getTestIntroMenu()
+		default:
+			text = "Вы нажали неизвестную кнопку"
+			keyboard = getBackButton()
 		}
-		return text, markup
+	} else if strings.HasPrefix(data, testPrefix) {
+		command = strings.TrimPrefix(data, testPrefix)
+
+		switch command {
+		case "test_start":
+			text, keyboard = getTestQuestion1Menu()
+		case "test_afraid":
+			text, keyboard = getTestAfraidScreen()
+		case "test_stupid":
+			text, keyboard = getTestStupidScreen()
+		default:
+			text = "Вы нажали неизвестную кнопку"
+			keyboard = getBackButton()
+		}
+	} else {
+		text = "Вы нажали неизвестную кнопку"
+		keyboard = getBackButton()
 	}
 
-	// Берём текст по ключу menu.Text (пример: "start" -> screens["start"])
-	text := h.cfg.Texts.Screens[menu.Text]
-	if text == "" {
-		text = h.cfg.Texts.Replies.Unknown
-	}
-
-	// Строим клавиатуру из YAML
-	markup, ok := h.buildMenu(menuName)
-	if !ok {
-		markup = tgbotapi.NewInlineKeyboardMarkup()
-	}
-
-	return text, markup
+	return text, keyboard
 }
 
-// renderScreen показывает один экран (screens[key]) + кнопку "Назад".
-// Пока делаем упрощение: "Назад" всегда ведёт в главное меню.
-func (h *Handler) renderScreen(screenKey string) (string, tgbotapi.InlineKeyboardMarkup) {
-	text := h.cfg.Texts.Screens[screenKey]
-	if text == "" {
-		text = h.cfg.Texts.Replies.Unknown
-	}
 
-	back := tgbotapi.NewInlineKeyboardMarkup(
+func getMainMenu() (string, tgbotapi.InlineKeyboardMarkup) {
+	text := "Главное меню. Выберите нужный раздел:"
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("ℹ️ О боте", "screen:info"),
+			tgbotapi.NewInlineKeyboardButtonData("🌦 Погода", "screen:weather"),
+			tgbotapi.NewInlineKeyboardButtonData("🧪 Тестовое интро", "menu:test_intro"),
+		),
+	)
+	return text, keyboard
+}
+
+func getTestIntroMenu() (string, tgbotapi.InlineKeyboardMarkup) {
+	text := "Это тестовое интро меню. Здесь будет информация о том, как пользоваться ботом."
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("ℹ️ Да", "test:test_start"),
+			tgbotapi.NewInlineKeyboardButtonData("🌦 Нет, но да", "test:test_start"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("ℹ️ Я босюь", "test:test_afraid"),
+			tgbotapi.NewInlineKeyboardButtonData("🌦 Я тупой", "test:test_stupid"),
+		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "menu:main"),
 		),
 	)
+	return text, keyboard
+}
 
-	return text, back
+func getTestQuestion1Menu() (string, tgbotapi.InlineKeyboardMarkup) {
+	text := "Первый вопрос: Кто пернул?"
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Я", "test:test_q1_yes"),
+			tgbotapi.NewInlineKeyboardButtonData("Не я", "test:test_q1_no"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Выйти из теста", "menu:main"),
+		),
+	)
+	return text, keyboard
+}
+
+func getTestAfraidScreen() (string, tgbotapi.InlineKeyboardMarkup) {
+	text := "Вы выбрали 'Я боюсь'. Не волнуйтесь, бот очень дружелюбный!"
+	keyboard := getBackButton()
+	return text, keyboard
+}
+
+func getTestStupidScreen() (string, tgbotapi.InlineKeyboardMarkup) {
+	text := "Вы выбрали 'Я тупой'. Не переживайте, бот прост в использовании!"
+	keyboard := getBackButton()
+	return text, keyboard
+}
+
+func getInfoMenu() (string, tgbotapi.InlineKeyboardMarkup) {
+	text := `Этот бот предоставляет информацию о погоде.
+	Вы можете узнать текущую погоду, прогноз на неделю и многое другое!`
+	keyboard := getBackButton()
+	return text, keyboard
+}
+
+func getWeatherMenu() (string, tgbotapi.InlineKeyboardMarkup) {
+	text := "В разработке... Скоро будет доступна информация о погоде!"
+	keyboard := getBackButton()
+	return text, keyboard
+}
+
+func getBackButton() tgbotapi.InlineKeyboardMarkup {
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "menu:main"),
+		),
+	)
+	return keyboard
 }

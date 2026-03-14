@@ -57,12 +57,35 @@ screens:
     Ты сомневаешься? Ну давай посмотрим... 🧠
     Готов(а) узнать свой icq?
 
-  id_yes: |
+  test_q1: |
     Супер. Приступаем
+    Первый вопрос: 
 
-  iq_afraid: |
-    Супер. Приступаем
 
+  test_q2: |
+    Второй вопрос
+
+  test_q3: |
+    Третий вопрос
+
+  test_afraid: |
+    Бояться не стыдо, стыдно смотреть Битву экстрасенсов
+    
+    Последний шанс. Начинаем тест?
+
+  test_shit: |
+    Ах ты засранец...
+
+    Вводи /start Я постараюсь забыть это.
+    Какашка...
+
+  test_stupid: |
+    Смело!
+    Но я все равно хочу заставить тебя страдать.
+
+    Для тебя у меня есть особо сложное задание. Тут нужно будет проявить всю свою смекалку.
+
+    Погнали?
 
   hulk: "Вот он, Халк! 💪"
 
@@ -98,16 +121,38 @@ menus:
 
   test_intro:
     text: "test_intro"
-  rows:
-    - [ {text: "Да", cb: "menu:test_q1"}, {text: "Нет, но да", cb: "menu:test_q1"} ]
-    - [ {text: "Я боюсь", cb: "screen:test_result_afraid"}, {text: "Я тупой", cb: "screen:test_result_stupid"} ]
-
-
-  iq_yes:
-    text: "iq_yes"
     rows:
-      - [ {text: "3", cb: "screen:wrong"} ]
-      - [ {text: "4", cb: "menu:iq_q2"} ]
+      - [ {text: "Да", cb: "test:start"}, {text: "Нет, но да", cb: "test:start"} ]
+      - [ {text: "Я боюсь", cb: "screen:test_afraid"}, {text: "Я тупой", cb: "screen:test_stupid"} ]
+
+  test_afraid:
+    text: "test_afraid"
+    rows:
+      - [ {text: "Погнали!", cb: "menu:test_q1"} ]
+      - [ {text: "Я обкакался", cb: "screen:test_shit"} ]
+
+  test_stupid:
+    text: "test_stupid"
+    rows:
+      - [ {text: "Погнали!", cb: "menu:test_q1"} ]
+
+  test_q1:
+    text: "test_q1"
+    rows:
+      - [ {text: "1", cb: "answer:test_q1:a1"} ]
+      - [ {text: "2", cb: "answer:test_q1:a2"} ]
+
+  test_q2:
+    text: "test_q2"
+    rows:
+      - [ {text: "3", cb: "answer:test_q2:a1"} ]
+      - [ {text: "4", cb: "answer:test_q2:a2"} ]
+
+  test_q3:
+    text: "test_q3"
+    rows:
+      - [ {text: "5", cb: "answer:test_q3:a1"} ]
+      - [ {text: "6", cb: "answer:test_q3:a2"} ]         
 
 
 

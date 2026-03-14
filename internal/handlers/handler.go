@@ -1,56 +1,58 @@
 package handlers
 
 import (
-	"log"
-
-	"github.com/Khirill3490/weatherBot/internal/config"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	cfg "github.com/Khirill3490/weatherBot/internal/config"
 )
 
-/*
-Handler — это "центр" обработки событий Telegram.
-
-Мы храним здесь:
-- tgBot: клиент Telegram API
-- cfg: конфигурация (включая тексты из YAML)
-
-Так удобнее, чем передавать cfg и bot в каждую функцию.
-*/
 type Handler struct {
-	tgBot *tgbotapi.BotAPI
-	cfg   *config.Config
+	bot *tgbotapi.BotAPI
+	cfg *cfg.Config
 }
 
-// New создает обработчик и сохраняет зависимости внутри.
-func New(tgBot *tgbotapi.BotAPI, cfg *config.Config) *Handler {
+func New(bot *tgbotapi.BotAPI, cfg *cfg.Config) *Handler {
 	return &Handler{
-		tgBot: tgBot,
-		cfg:   cfg,
+		bot: bot,
+		cfg: cfg,
 	}
 }
 
-/*
-Run запускает основной цикл long polling и маршрутизирует события:
-- Message → handleMessage
-- CallbackQuery → handleCallback
-*/
 func (h *Handler) Run() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	updates := h.tgBot.GetUpdatesChan(u)
+	updates := h.bot.GetUpdatesChan(u)
 
 	for update := range updates {
-		if update.CallbackQuery != nil {
-			h.handleCallback(update.CallbackQuery)
-			continue
-		}
 
 		if update.Message != nil {
-			h.handleMessage(update.Message)
-			continue
+			if update.Message.Text == "/start" {
+				var text string
+				var keyboard tgbotapi.InlineKeyboardMarkup
+				chatID := update.Message.Chat.ID
+
+				text, keyboard = getScreen("menu:main")
+
+				h.SendMessage(chatID, text, keyboard)
+
+			}
+		}
+
+		if update.CallbackQuery != nil {
+			chatID := update.CallbackQuery.Message.Chat.ID
+			messageID := update.CallbackQuery.Message.MessageID
+			var text string
+			var keyboard tgbotapi.InlineKeyboardMarkup
+
+			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "")
+			_, _ = h.bot.Request(callback)
+
+			data := update.CallbackQuery.Data
+
+			text, keyboard = getScreen(data)
+
+			h.EditMessage(chatID, messageID, text, keyboard)
+
 		}
 	}
-
-	log.Println("Канал обновлений закрыт")
 }
