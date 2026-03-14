@@ -10,6 +10,7 @@ func getScreen(data string) (string, tgbotapi.InlineKeyboardMarkup) {
 	screenPrefix := "screen:"
 	menuPrefix := "menu:"
 	testPrefix := "test:"
+	answerPrefix := "answer:"
 	var text string
 	var keyboard tgbotapi.InlineKeyboardMarkup
 
@@ -44,12 +45,42 @@ func getScreen(data string) (string, tgbotapi.InlineKeyboardMarkup) {
 		command = strings.TrimPrefix(data, testPrefix)
 
 		switch command {
-		case "test_start":
+		case "start":
 			text, keyboard = getTestQuestion1Menu()
-		case "test_afraid":
+		case "q1":
+			text, keyboard = getTestQuestion1Menu()
+		case "q2":
+			text, keyboard = getTestQuestion2Menu()
+		case "afraid":
 			text, keyboard = getTestAfraidScreen()
-		case "test_stupid":
+		case "stupid":
 			text, keyboard = getTestStupidScreen()
+		default:
+			text = "Вы нажали неизвестную кнопку"
+			keyboard = getBackButton()
+		}
+	} else if strings.HasPrefix(data, answerPrefix) {
+		command = strings.TrimPrefix(data, answerPrefix)
+
+		switch command {
+		case "q1:a1":
+			feedbackText := "Вы ответили 'Я'. Это правильный ответ!"
+			text, keyboard = getTestQuestion2Menu()
+			text = feedbackText + "\n\n" + text
+
+		case "q1:a2":
+			feedbackText := "Вы ответили 'Не я'. Это неправильный ответ."
+			text, keyboard = getTestQuestion2Menu()
+			text = feedbackText + "\n\n" + text
+		case "q2:a1":
+			feedbackText := "Вы ответили 'Да'. Это правильный ответ!"
+			text, keyboard = getTestResultMenu()
+			text = feedbackText + "\n\n" + text
+
+		case "q2:a2":
+			feedbackText := "Вы ответили 'Нет'. Это неправильный ответ."
+			text, keyboard = getTestResultMenu()
+			text = feedbackText + "\n\n" + text
 		default:
 			text = "Вы нажали неизвестную кнопку"
 			keyboard = getBackButton()
@@ -61,7 +92,6 @@ func getScreen(data string) (string, tgbotapi.InlineKeyboardMarkup) {
 
 	return text, keyboard
 }
-
 
 func getMainMenu() (string, tgbotapi.InlineKeyboardMarkup) {
 	text := "Главное меню. Выберите нужный раздел:"
@@ -76,30 +106,64 @@ func getMainMenu() (string, tgbotapi.InlineKeyboardMarkup) {
 }
 
 func getTestIntroMenu() (string, tgbotapi.InlineKeyboardMarkup) {
-	text := "Это тестовое интро меню. Здесь будет информация о том, как пользоваться ботом."
+	text := "Вы готовы начать тест?."
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("ℹ️ Да", "test:test_start"),
-			tgbotapi.NewInlineKeyboardButtonData("🌦 Нет, но да", "test:test_start"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("ℹ️ Я босюь", "test:test_afraid"),
-			tgbotapi.NewInlineKeyboardButtonData("🌦 Я тупой", "test:test_stupid"),
+			tgbotapi.NewInlineKeyboardButtonData("ℹ️ Начать тест", "test:start"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "menu:main"),
 		),
 	)
+
 	return text, keyboard
+
+	// keyboard := tgbotapi.NewInlineKeyboardMarkup(
+	// 	tgbotapi.NewInlineKeyboardRow(
+	// 		tgbotapi.NewInlineKeyboardButtonData("ℹ️ Да", "test:test_start"),
+	// 		tgbotapi.NewInlineKeyboardButtonData("🌦 Нет, но да", "test:test_start"),
+	// 	),
+	// 	tgbotapi.NewInlineKeyboardRow(
+	// 		tgbotapi.NewInlineKeyboardButtonData("ℹ️ Я босюь", "test:test_afraid"),
+	// 		tgbotapi.NewInlineKeyboardButtonData("🌦 Я тупой", "test:test_stupid"),
+	// 	),
+	// 	tgbotapi.NewInlineKeyboardRow(
+	// 		tgbotapi.NewInlineKeyboardButtonData("⬅️ Назад", "menu:main"),
+	// 	),
+	// )
 }
 
 func getTestQuestion1Menu() (string, tgbotapi.InlineKeyboardMarkup) {
 	text := "Первый вопрос: Кто пернул?"
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Я", "test:test_q1_yes"),
-			tgbotapi.NewInlineKeyboardButtonData("Не я", "test:test_q1_no"),
+			tgbotapi.NewInlineKeyboardButtonData("Я", "answer:q1:a1"),
+			tgbotapi.NewInlineKeyboardButtonData("Не я", "answer:q1:a2"),
 		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Выйти из теста", "menu:main"),
+		),
+	)
+	return text, keyboard
+}
+
+func getTestQuestion2Menu() (string, tgbotapi.InlineKeyboardMarkup) {
+	text := "Второй вопрос"
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Да", "answer:q2:a1"),
+			tgbotapi.NewInlineKeyboardButtonData("Нет", "answer:q2:a2"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Выйти из теста", "menu:main"),
+		),
+	)
+	return text, keyboard
+}
+
+func getTestResultMenu() (string, tgbotapi.InlineKeyboardMarkup) {
+	text := "Результаты теста: Вы молодец!"
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Выйти из теста", "menu:main"),
 		),

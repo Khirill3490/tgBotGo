@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	cfg "github.com/Khirill3490/weatherBot/internal/config"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 type Handler struct {
@@ -10,7 +10,7 @@ type Handler struct {
 	cfg *cfg.Config
 }
 
-func New(bot *tgbotapi.BotAPI, cfg *cfg.Config) *Handler {
+func NewHandler(bot *tgbotapi.BotAPI, cfg *cfg.Config) *Handler {
 	return &Handler{
 		bot: bot,
 		cfg: cfg,
